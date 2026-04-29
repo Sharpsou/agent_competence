@@ -1,13 +1,33 @@
 # Project Skills
 
-Les skills projet sont versionnes dans `.codex/skills/`.
+Les skills projet sont installes depuis `skills.sh` et versionnes dans `.agents/skills/`.
 
-Ils servent a cadrer la maniere dont Codex doit travailler dans ce repo :
+Commande utilisee :
 
-- `.codex/skills/fastapi-backend/SKILL.md`
-- `.codex/skills/python-quality/SKILL.md`
-- `.codex/skills/agentic-design/SKILL.md`
-- `.codex/skills/project-management/SKILL.md`
-- `.codex/skills/git-workflow/SKILL.md`
+```powershell
+npx skills add obra/superpowers --skill using-superpowers test-driven-development systematic-debugging writing-plans executing-plans verification-before-completion requesting-code-review receiving-code-review finishing-a-development-branch writing-skills --agent codex --copy -y
+npx skills add github/awesome-copilot --skill git-commit --agent codex --copy -y
+npx skills add skillcreatorai/ai-agent-skills --skill backend-development llm-application-dev --agent codex --copy -y
+```
 
-Ces fichiers sont volontairement courts. Ils donnent des garde-fous sans transformer le projet en grosse architecture.
+## Skills installes
+
+- `.agents/skills/using-superpowers/SKILL.md`
+- `.agents/skills/test-driven-development/SKILL.md`
+- `.agents/skills/systematic-debugging/SKILL.md`
+- `.agents/skills/writing-plans/SKILL.md`
+- `.agents/skills/executing-plans/SKILL.md`
+- `.agents/skills/verification-before-completion/SKILL.md`
+- `.agents/skills/requesting-code-review/SKILL.md`
+- `.agents/skills/receiving-code-review/SKILL.md`
+- `.agents/skills/finishing-a-development-branch/SKILL.md`
+- `.agents/skills/writing-skills/SKILL.md`
+- `.agents/skills/git-commit/SKILL.md`
+- `.agents/skills/backend-development/SKILL.md`
+- `.agents/skills/llm-application-dev/SKILL.md`
+
+## Notes
+
+- Les anciens skills maison dans `.codex/skills/` ont ete retires car redondants.
+- `skills-lock.json` garde la trace des skills installes et permet de les restaurer.
+- `--copy` a ete utilise pour garder les fichiers Markdown dans le projet.

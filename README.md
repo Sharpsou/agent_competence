@@ -2,7 +2,7 @@
 
 Backend Python FastAPI minimal, destine a exposer une API pour un futur front web.
 
-Le projet commence volontairement simple. Les conventions de travail sont dans des skills Markdown locaux, versionnes avec le repo.
+Le projet commence volontairement simple. Les conventions de travail viennent de skills Markdown installes depuis `skills.sh` et versionnes avec le repo.
 
 ## Stack
 
@@ -50,17 +50,22 @@ app/
   main.py        # application FastAPI minimale
 tests/           # tests automatises
 docs/            # notes projet et index des skills
-.codex/skills/   # skills Markdown propres au projet
+.agents/skills/  # skills Markdown installes depuis skills.sh
 ```
 
 ## Skills projet
 
-Les skills qui cadrent le projet sont dans `.codex/skills/` :
+Les skills qui cadrent le projet sont dans `.agents/skills/`, installes depuis `skills.sh`.
 
-- `fastapi-backend`
-- `python-quality`
-- `agentic-design`
-- `project-management`
-- `git-workflow`
+Principaux skills :
+
+- `backend-development`
+- `llm-application-dev`
+- `test-driven-development`
+- `systematic-debugging`
+- `writing-plans`
+- `executing-plans`
+- `verification-before-completion`
+- `git-commit`
 
 Voir aussi `docs/SKILLS.md`.

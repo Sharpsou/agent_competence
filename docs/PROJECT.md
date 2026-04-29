@@ -8,7 +8,7 @@ Construire un backend FastAPI clair, minimal, testable et pret a etre connecte a
 
 - Commencer simple : `app/main.py` suffit tant que le besoin reste petit.
 - Ajouter des dossiers seulement quand le code le justifie.
-- Garder les conventions projet dans `.codex/skills/`.
+- Garder les conventions projet dans `.agents/skills/`, installees depuis `skills.sh`.
 - Tests rapides pour chaque comportement public.
 
 ## Prochaines etapes proposees

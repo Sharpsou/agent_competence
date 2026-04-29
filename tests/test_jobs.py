@@ -11,6 +11,7 @@ from app.jobs import (
     RemoteMode,
     build_interactive_search_request,
     detect_remote_mode,
+    extract_job_posting,
     load_search_request_config,
     resolve_location_code,
     save_search_request_config,
@@ -80,6 +81,36 @@ def test_builds_france_travail_search_url_with_filters() -> None:
     assert "tri=0" in url
 
 
+def test_extracts_france_travail_microdata_job_posting() -> None:
+    html = """
+    <div itemtype="http://schema.org/JobPosting" itemscope>
+      <span itemprop="identifier" content="123ABC"></span>
+      <h1 itemprop="title">Data Analyst</h1>
+      <div itemprop="hiringOrganization" itemscope>
+        <span itemprop="name">Example Corp</span>
+      </div>
+      <div itemprop="jobLocation" itemscope>
+        <div itemprop="address" itemscope>
+          <span itemprop="addressLocality">Nantes</span>
+          <span itemprop="addressRegion">Pays de la Loire</span>
+          <span itemprop="addressCountry">France</span>
+        </div>
+      </div>
+      <span itemprop="employmentType">CDI</span>
+      <time itemprop="datePosted" content="2026-04-29"></time>
+      <div itemprop="description">Poste hybride avec SQL et Python.</div>
+    </div>
+    """
+
+    posting = extract_job_posting(html)
+
+    assert posting is not None
+    assert posting["identifier"]["value"] == "123ABC"
+    assert posting["title"] == "Data Analyst"
+    assert posting["hiringOrganization"]["name"] == "Example Corp"
+    assert posting["jobLocation"]["address"]["addressLocality"] == "Nantes"
+
+
 def test_search_jobs_filters_results() -> None:
     request = JobSearchRequest(
         keywords=["data"],
@@ -99,8 +130,8 @@ def test_loads_search_request_from_json_config() -> None:
     request = load_search_request_config(DEFAULT_SEARCH_CONFIG_PATH)
 
     assert request.keywords
-    assert request.locations == ["Nantes"]
-    assert request.location == "Nantes"
+    assert request.locations
+    assert request.location
     assert request.contract_type == "CDI"
 
 

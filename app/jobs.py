@@ -473,7 +473,50 @@ def extract_job_posting(html: str) -> dict[str, Any] | None:
         for item in iter_ld_json_objects(payload):
             if item.get("@type") == "JobPosting":
                 return item
-    return None
+    return extract_job_posting_microdata(html)
+
+
+def extract_job_posting_microdata(html: str) -> dict[str, Any] | None:
+    if 'itemtype="http://schema.org/JobPosting"' not in html and (
+        "itemtype='http://schema.org/JobPosting'" not in html
+    ):
+        return None
+
+    posting: dict[str, Any] = {}
+
+    identifier = extract_identifier_value(html)
+    if identifier:
+        posting["identifier"] = {"value": identifier}
+
+    title = extract_itemprop_html(html, "title")
+    if title:
+        posting["title"] = strip_html(title)
+
+    description = extract_itemprop_html(html, "description")
+    if description:
+        posting["description"] = description
+
+    date_posted = extract_itemprop_content(html, "datePosted")
+    if date_posted:
+        posting["datePosted"] = date_posted
+
+    employment_type = extract_itemprop_content(html, "employmentType")
+    if employment_type:
+        posting["employmentType"] = employment_type
+
+    company_name = extract_hiring_organization_name(html)
+    if company_name:
+        posting["hiringOrganization"] = {"name": company_name}
+
+    location = extract_job_location(html)
+    if location:
+        posting["jobLocation"] = location
+
+    skills = extract_itemprop_list(html, "skills")
+    if skills:
+        posting["skills"] = skills
+
+    return posting if posting else None
 
 
 def extract_source_job_id(posting: dict[str, Any], detail_url: str) -> str:
@@ -490,6 +533,93 @@ def extract_company_name(posting: dict[str, Any]) -> str:
     if isinstance(organization, dict):
         return str(organization.get("name") or "Entreprise non precisee")
     return "Entreprise non precisee"
+
+
+def extract_itemprop_content(html: str, itemprop: str) -> str | None:
+    patterns = [
+        rf'itemprop=["\']{re.escape(itemprop)}["\'][^>]*content=["\']([^"\']+)["\']',
+        rf'content=["\']([^"\']+)["\'][^>]*itemprop=["\']{re.escape(itemprop)}["\']',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, html, flags=re.IGNORECASE)
+        if match:
+            return unescape(match.group(1)).strip()
+
+    inline_value = extract_itemprop_html(html, itemprop)
+    if inline_value:
+        return strip_html(inline_value)
+    return None
+
+
+def extract_identifier_value(html: str) -> str | None:
+    identifier_block = extract_itemprop_html(html, "identifier")
+    if identifier_block:
+        value = extract_itemprop_content(identifier_block, "value")
+        if value:
+            return value
+
+    identifier_content = extract_itemprop_content(html, "identifier")
+    if identifier_content:
+        return identifier_content
+
+    return extract_itemprop_content(html, "value")
+
+
+def extract_itemprop_html(html: str, itemprop: str) -> str | None:
+    match = re.search(
+        rf'<(?P<tag>[a-z0-9]+)[^>]*itemprop=["\']{re.escape(itemprop)}["\'][^>]*>'
+        rf"(?P<content>.*?)</(?P=tag)>",
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return None
+    return match.group("content").strip()
+
+
+def extract_itemprop_list(html: str, itemprop: str) -> list[str]:
+    matches = re.findall(
+        rf'<[^>]*itemprop=["\']{re.escape(itemprop)}["\'][^>]*>(.*?)</[^>]+>',
+        html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    values = [strip_html(match) for match in matches]
+    return [value for value in values if value]
+
+
+def extract_hiring_organization_name(html: str) -> str | None:
+    patterns = [
+        r'itemprop=["\']hiringOrganization["\'][^>]*>.*?'
+        r'itemprop=["\']name["\'][^>]*content=["\']([^"\']*)["\']',
+        r'itemprop=["\']hiringOrganization["\'][^>]*>.*?'
+        r'content=["\']([^"\']*)["\'][^>]*itemprop=["\']name["\']',
+        r'itemprop=["\']hiringOrganization["\'][^>]*>.*?'
+        r'itemprop=["\']name["\'][^>]*>(.*?)</[^>]+>',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, html, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            value = strip_html(unescape(match.group(1)))
+            if value:
+                return value
+    return None
+
+
+def extract_job_location(html: str) -> dict[str, Any] | None:
+    locality = extract_itemprop_content(html, "addressLocality")
+    region = extract_itemprop_content(html, "addressRegion")
+    country = extract_itemprop_content(html, "addressCountry")
+    postal_code = extract_itemprop_content(html, "postalCode")
+
+    address = {
+        "addressLocality": locality or "",
+        "addressRegion": region or "",
+        "addressCountry": country or "",
+        "postalCode": postal_code or "",
+    }
+    if not any(address.values()):
+        return None
+    return {"address": address}
 
 
 def extract_location_text(posting: dict[str, Any]) -> str:

@@ -1,21 +1,12 @@
 from fastapi.testclient import TestClient
 
-from app.main import create_app
+from app.main import app
 
 
-def test_root_health_endpoint_returns_ok() -> None:
-    client = TestClient(create_app())
+def test_health_endpoint_returns_ok() -> None:
+    client = TestClient(app)
 
     response = client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
-def test_versioned_health_endpoint_returns_ok() -> None:
-    client = TestClient(create_app())
-
-    response = client.get("/api/v1/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}

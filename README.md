@@ -1,12 +1,13 @@
 # Agent Competence Backend
 
-Backend Python FastAPI destiné a exposer une API pour un futur front web et a servir de base pour des fonctionnalites agentiques.
+Backend Python FastAPI minimal, destine a exposer une API pour un futur front web.
+
+Le projet commence volontairement simple. Les conventions de travail sont dans des skills Markdown locaux, versionnes avec le repo.
 
 ## Stack
 
 - Python 3.12+
 - FastAPI
-- Pydantic Settings
 - Pytest
 - Ruff
 - Mypy
@@ -31,7 +32,6 @@ uvicorn app.main:app --reload
 Endpoints utiles :
 
 - `GET /health`
-- `GET /api/v1/health`
 - `GET /docs`
 
 ## Qualite
@@ -47,20 +47,20 @@ pytest
 
 ```text
 app/
-  agents/        # services et contrats pour la future logique agentique
-  api/           # routes HTTP versionnees
-  core/          # configuration et briques transverses
-  schemas/       # schemas Pydantic publics
+  main.py        # application FastAPI minimale
 tests/           # tests automatises
-docs/            # notes projet, decisions, conventions
+docs/            # notes projet et index des skills
+.codex/skills/   # skills Markdown propres au projet
 ```
 
-## Skills Codex installes
+## Skills projet
 
-Les skills suivants ont ete installes pour soutenir le projet :
+Les skills qui cadrent le projet sont dans `.codex/skills/` :
 
-- `openai-docs` pour les bonnes pratiques OpenAI et agentiques a jour
-- `security-best-practices` et `security-threat-model` pour la securite
-- `gh-address-comments`, `gh-fix-ci` et `yeet` pour GitHub, CI, reviews et PR
+- `fastapi-backend`
+- `python-quality`
+- `agentic-design`
+- `project-management`
+- `git-workflow`
 
-Redemarre Codex pour prendre en compte les nouveaux skills.
+Voir aussi `docs/SKILLS.md`.

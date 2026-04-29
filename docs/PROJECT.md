@@ -2,19 +2,18 @@
 
 ## Objectif
 
-Construire un backend FastAPI clair, testable et pret a etre connecte a un front web.
+Construire un backend FastAPI clair, minimal, testable et pret a etre connecte a un futur front web.
 
 ## Principes
 
-- API versionnee sous `/api/v1`.
-- Configuration via variables d'environnement.
-- Logique metier hors des routes HTTP.
-- Services agentiques encapsules derriere des interfaces simples et testables.
+- Commencer simple : `app/main.py` suffit tant que le besoin reste petit.
+- Ajouter des dossiers seulement quand le code le justifie.
+- Garder les conventions projet dans `.codex/skills/`.
 - Tests rapides pour chaque comportement public.
 
 ## Prochaines etapes proposees
 
 - Definir le premier cas d'usage agentique.
-- Choisir le fournisseur LLM et la strategie d'orchestration.
-- Ajouter une couche persistence si necessaire.
-- Ajouter CI GitHub Actions quand le depot distant existe.
+- Ajouter une premiere route utile au front.
+- Choisir le fournisseur LLM seulement quand le premier cas d'usage est clair.
+- Ajouter une couche persistence uniquement si necessaire.

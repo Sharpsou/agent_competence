@@ -34,6 +34,11 @@ Endpoints utiles :
 - `GET /health`
 - `GET /docs`
 
+Direction court terme :
+
+- `POST /jobs/search` pour chercher des offres d'emploi par mots-cles, localisation et filtres.
+- Voir `docs/JOB_COLLECTION.md`.
+
 ## Qualite
 
 ```powershell

@@ -37,7 +37,21 @@ Endpoints utiles :
 Direction court terme :
 
 - `POST /jobs/search` pour chercher des offres d'emploi par mots-cles, localisation et filtres.
+- `POST /jobs/search/from-config` pour utiliser `config/job_search_request.json`.
 - Voir `docs/JOB_COLLECTION.md`.
+
+Exemple :
+
+```json
+{
+  "keywords": ["Data Analyst", "Python"],
+  "location": "Nantes",
+  "radius_km": 10,
+  "contract_type": "CDI",
+  "remote_mode": "hybrid",
+  "max_results": 20
+}
+```
 
 ## Qualite
 

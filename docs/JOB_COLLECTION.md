@@ -15,6 +15,21 @@ Le projet `D:\prog\actu_emploi` contient deja une exploration utile :
 
 On reprend les idees, pas toute l'architecture.
 
+## Etat implementation
+
+Les premiers endpoints sont :
+
+- `POST /jobs/search` pour envoyer la demande dans le body HTTP.
+- `POST /jobs/search/from-config` pour lancer la recherche depuis le fichier JSON de configuration.
+
+La demande de recherche est une configuration d'entree, pas une sauvegarde.
+
+Fichier utilise :
+
+- `config/job_search_request.json`
+
+Ce fichier est versionne pour le moment afin de cadrer les champs attendus. On pourra ensuite passer a un fichier local ignore si les filtres deviennent personnels ou sensibles.
+
 ## Sources initiales
 
 ### France Travail
@@ -26,8 +41,11 @@ Approche observee dans `actu_emploi` :
 - extraction de liens de detail depuis la page de resultats
 - extraction du detail via JSON-LD `JobPosting` quand disponible
 - codes de communes deja utiles :
-  - Nantes : `44109`
-  - Saint-Nazaire : `44184`
+- Nantes : `44109`
+- Saint-Nazaire : `44184`
+
+La table locale de correspondance ville/code est dans `app/jobs.py`.
+Elle utilise des codes commune INSEE pour les villes connues et pourra etre remplacee ensuite par une table dediee ou une API de geocodage.
 
 ### Jooble
 

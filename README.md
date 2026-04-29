@@ -47,7 +47,9 @@ ou :
 .\scripts\search-jobs.cmd
 ```
 
-La commande demande les mots-cles, ville(s), type de contrat, preference teletravail et nombre de resultats, puis met a jour `config/job_search_request.json`.
+La commande demande d'abord si elle doit reutiliser la derniere config et le cache deja trouve.
+Repondre `O` lance directement la recherche avec `config/job_search_request.json`.
+Repondre `n` supprime le cache HTTP, redemande les filtres, puis met a jour `config/job_search_request.json`.
 
 Endpoints utiles :
 
@@ -58,7 +60,28 @@ Direction court terme :
 
 - `POST /jobs/search` pour chercher des offres d'emploi par mots-cles, localisation et filtres.
 - `POST /jobs/search/from-config` pour utiliser `config/job_search_request.json`.
+- `POST /competencies/extract` pour extraire les competences depuis une liste d'offres.
+- `POST /competencies/analyze/from-config` pour chercher, analyser et sauvegarder les competences.
 - Voir `docs/JOB_COLLECTION.md`.
+- Voir `docs/AGENTIC_COMPETENCY_MODEL.md`.
+
+Lance PostgreSQL local :
+
+```powershell
+docker compose up -d postgres
+```
+
+Analyse les offres de la config et sauvegarde si `DATABASE_URL` est renseigne :
+
+```powershell
+python -m app.analyze_cli
+```
+
+Petit client SQL :
+
+```powershell
+python -m app.sql_client -q "select name, category from competencies order by name limit 20"
+```
 
 Exemple :
 

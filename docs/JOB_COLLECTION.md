@@ -30,7 +30,7 @@ Fichier utilise :
 
 Ce fichier est versionne pour le moment afin de cadrer les champs attendus. On pourra ensuite passer a un fichier local ignore si les filtres deviennent personnels ou sensibles.
 
-La commande interactive `search-jobs` pose les questions a chaque lancement.
+La commande interactive `search-jobs` commence par demander si elle doit reutiliser la derniere config et le cache deja trouve.
 
 Sur Windows, si le script installe par pip n'est pas dans le `PATH`, utiliser :
 
@@ -44,7 +44,10 @@ ou :
 .\scripts\search-jobs.cmd
 ```
 
-Questions posees :
+Si la reponse est `oui`, elle charge `config/job_search_request.json` et lance directement la recherche avec le cache HTTP existant.
+Si la reponse est `non`, elle supprime le cache HTTP puis pose les questions de configuration.
+
+Questions posees en mode nouvelle recherche :
 
 - mots-cles ou postes
 - ville(s)

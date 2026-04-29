@@ -4,12 +4,13 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from app.jobs import (
-    DEFAULT_SEARCH_CONFIG_PATH,
     FranceTravailConnector,
     JobOffer,
     JobSearchRequest,
     RemoteMode,
+    ask_yes_no,
     build_interactive_search_request,
+    clear_http_cache,
     detect_remote_mode,
     extract_job_posting,
     load_search_request_config,
@@ -126,20 +127,86 @@ def test_search_jobs_filters_results() -> None:
     assert [offer.source_job_id for offer in response.offers] == ["1"]
 
 
-def test_loads_search_request_from_json_config() -> None:
-    request = load_search_request_config(DEFAULT_SEARCH_CONFIG_PATH)
+def test_search_jobs_continues_next_keywords_after_unmatched_raw_results() -> None:
+    class FakeKeywordFetcher:
+        def fetch_text(self, url: str) -> str:
+            if "motsCles=data" in url:
+                return """
+                <a href="/offres/recherche/detail/data-1">Data 1</a>
+                <a href="/offres/recherche/detail/data-2">Data 2</a>
+                """
+            if "motsCles=sql" in url:
+                return '<a href="/offres/recherche/detail/sql-1">SQL 1</a>'
+            if url.endswith("/data-1"):
+                return job_posting_html("data-1", "Data onsite 1", "CDI", "Poste sur site")
+            if url.endswith("/data-2"):
+                return job_posting_html("data-2", "Data onsite 2", "CDI", "Poste sur site")
+            if url.endswith("/sql-1"):
+                return job_posting_html("sql-1", "SQL hybrid", "CDI", "Poste avec teletravail")
+            raise AssertionError(f"Unexpected URL: {url}")
 
-    assert request.keywords
-    assert request.locations
-    assert request.location
-    assert request.contract_type == "CDI"
+    request = JobSearchRequest(
+        keywords=["data", "sql"],
+        locations=["France"],
+        contract_type="CDI",
+        remote_mode=RemoteMode.HYBRID,
+        max_results=2,
+    )
+
+    response = search_jobs(
+        request,
+        connectors=[FranceTravailConnector(fetcher=FakeKeywordFetcher())],
+    )
+
+    assert [offer.source_job_id for offer in response.offers] == ["sql-1"]
+
+
+def job_posting_html(identifier: str, title: str, contract: str, description: str) -> str:
+    return f"""
+    <div itemtype="http://schema.org/JobPosting" itemscope>
+      <span itemprop="identifier" content="{identifier}"></span>
+      <h1 itemprop="title">{title}</h1>
+      <span itemprop="employmentType">{contract}</span>
+      <div itemprop="description">{description}</div>
+    </div>
+    """
+
+
+def test_loads_search_request_from_json_config() -> None:
+    path = Path("data") / "runtime" / f"job-search-config-{uuid4()}.json"
+    expected_request = JobSearchRequest(
+        keywords=["Data"], locations=["Nantes"], contract_type="CDI"
+    )
+
+    try:
+        save_search_request_config(expected_request, path)
+        request = load_search_request_config(path)
+
+        assert request.keywords == ["Data"]
+        assert request.locations == ["Nantes"]
+        assert request.contract_type == "CDI"
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def test_search_jobs_from_config_uses_json_config() -> None:
-    response = search_jobs_from_config(connectors=[FakeConnector()])
+    path = Path("data") / "runtime" / f"job-search-config-{uuid4()}.json"
+    request = JobSearchRequest(
+        keywords=["Data"],
+        locations=["Nantes"],
+        location="Nantes",
+        contract_type="CDI",
+        remote_mode=RemoteMode.HYBRID,
+    )
 
-    assert response.resolved_location_code == "44109"
-    assert response.offers
+    try:
+        save_search_request_config(request, path)
+        response = search_jobs_from_config(config_path=path, connectors=[FakeConnector()])
+
+        assert response.resolved_location_code == "44109"
+        assert response.offers
+    finally:
+        path.unlink(missing_ok=True)
 
 
 def test_jobs_search_endpoint_accepts_request_payload() -> None:
@@ -176,6 +243,25 @@ def test_builds_interactive_search_request_from_prompts() -> None:
     assert request.radius_km == 15
     assert request.max_results == 30
     assert request.excluded_keywords == ["SAP"]
+
+
+def test_ask_yes_no_defaults_to_true() -> None:
+    assert ask_yes_no(lambda _: "") is True
+
+
+def test_ask_yes_no_accepts_no() -> None:
+    assert ask_yes_no(lambda _: "n", prompt="Utiliser le cache ?") is False
+
+
+def test_clear_http_cache_removes_existing_cache_files() -> None:
+    cache_dir = Path("data") / "runtime" / f"test-cache-{uuid4()}"
+    cache_file = cache_dir / "source" / "page.html"
+    cache_file.parent.mkdir(parents=True, exist_ok=True)
+    cache_file.write_text("<html></html>", encoding="utf-8")
+
+    clear_http_cache(cache_dir)
+
+    assert not cache_dir.exists()
 
 
 def test_saves_search_request_config() -> None:

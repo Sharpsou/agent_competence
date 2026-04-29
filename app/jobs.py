@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import time
 import unicodedata
 import urllib.parse
@@ -17,6 +18,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field, field_validator
 
 RUNTIME_DIR = Path("data") / "runtime"
+HTTP_CACHE_DIR = RUNTIME_DIR / "http-cache"
 DEFAULT_SEARCH_CONFIG_PATH = Path("config") / "job_search_request.json"
 
 CITY_CODES = {
@@ -217,6 +219,28 @@ def build_interactive_search_request(input_func: Any = input) -> JobSearchReques
     )
 
 
+def ask_yes_no(
+    input_func: Any,
+    prompt: str = "Utiliser le cache deja trouve ?",
+    default: bool = True,
+) -> bool:
+    suffix = "O/n" if default else "o/N"
+    while True:
+        raw_value = input_func(f"{prompt} [{suffix}]: ").strip().lower()
+        if not raw_value:
+            return default
+        if raw_value in {"o", "oui", "y", "yes"}:
+            return True
+        if raw_value in {"n", "non", "no"}:
+            return False
+        print("Veuillez repondre par oui ou non.")
+
+
+def clear_http_cache(cache_dir: Path = HTTP_CACHE_DIR) -> None:
+    if cache_dir.exists():
+        shutil.rmtree(cache_dir)
+
+
 def ask_list(input_func: Any, prompt: str, required: bool = True) -> list[str]:
     while True:
         raw_value = input_func(f"{prompt}: ").strip()
@@ -325,8 +349,6 @@ class FranceTravailConnector:
                     continue
                 seen.add(offer.source_job_id)
                 offers.append(offer)
-                if len(offers) >= request.max_results:
-                    return offers
 
         return offers
 
@@ -373,7 +395,7 @@ class PublicWebFetcher:
     def __init__(
         self,
         source_name: str,
-        cache_dir: Path = RUNTIME_DIR / "http-cache",
+        cache_dir: Path = HTTP_CACHE_DIR,
         timeout_seconds: int = 20,
         delay_seconds: float = 2.0,
     ) -> None:

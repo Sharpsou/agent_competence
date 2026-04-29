@@ -10,11 +10,15 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
+    "psycopg[binary]>=3.2.0",
+    "python-dotenv>=1.0.0",
     "uvicorn[standard]>=0.30.0",
 ]
 
 [project.scripts]
 search-jobs = "app.cli:main"
+analyze-competencies = "app.analyze_cli:main"
+query-db = "app.sql_client:main"
 
 [project.optional-dependencies]
 dev = [

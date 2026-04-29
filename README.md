@@ -29,6 +29,14 @@ Lance l'API :
 uvicorn app.main:app --reload
 ```
 
+Ou lance une recherche interactive depuis le terminal :
+
+```powershell
+search-jobs
+```
+
+La commande demande les mots-cles, ville(s), type de contrat, preference teletravail et nombre de resultats, puis met a jour `config/job_search_request.json`.
+
 Endpoints utiles :
 
 - `GET /health`
@@ -45,6 +53,7 @@ Exemple :
 ```json
 {
   "keywords": ["Data Analyst", "Python"],
+  "locations": ["Nantes"],
   "location": "Nantes",
   "radius_km": 10,
   "contract_type": "CDI",

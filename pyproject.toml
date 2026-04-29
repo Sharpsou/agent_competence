@@ -13,6 +13,9 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
 ]
 
+[project.scripts]
+search-jobs = "app.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "httpx>=0.27.0",

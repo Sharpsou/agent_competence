@@ -65,7 +65,11 @@ class JobSource(StrEnum):
 
 class JobSearchRequest(BaseModel):
     keywords: list[str] = Field(min_length=1, description="Mots-cles ou intitules de poste.")
-    location: str | None = Field(default=None, description="Ville ou zone de recherche.")
+    locations: list[str] = Field(default_factory=list, description="Villes ou zones de recherche.")
+    location: str | None = Field(
+        default=None,
+        description="Ville ou zone principale. Conserve la compatibilite avec les premiers appels.",
+    )
     location_code: str | None = Field(default=None, description="Code commune/source si connu.")
     radius_km: int = Field(default=10, ge=0, le=100)
     contract_type: str | None = None
@@ -78,6 +82,13 @@ class JobSearchRequest(BaseModel):
     @field_validator("keywords", "excluded_keywords", mode="before")
     @classmethod
     def split_string_values(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
+
+    @field_validator("locations", mode="before")
+    @classmethod
+    def split_locations(cls, value: object) -> object:
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
@@ -116,7 +127,7 @@ def search_jobs(
 ) -> JobSearchResponse:
     request_id = str(uuid4())
     stored_at = datetime.now(UTC).isoformat()
-    resolved_location_code = resolve_location_code(request.location, request.location_code)
+    resolved_location_code = resolve_location_code(primary_location(request), request.location_code)
     effective_request = request.model_copy(update={"location_code": resolved_location_code})
 
     active_connectors = connectors or build_connectors(effective_request)
@@ -164,6 +175,93 @@ def load_search_request_config(config_path: Path = DEFAULT_SEARCH_CONFIG_PATH) -
     with config_path.open(encoding="utf-8") as file:
         payload = json.load(file)
     return JobSearchRequest.model_validate(payload)
+
+
+def save_search_request_config(
+    request: JobSearchRequest,
+    config_path: Path = DEFAULT_SEARCH_CONFIG_PATH,
+) -> None:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        json.dumps(request.model_dump(mode="json"), ensure_ascii=True, indent=2),
+        encoding="utf-8",
+    )
+
+
+def primary_location(request: JobSearchRequest) -> str | None:
+    if request.location:
+        return request.location
+    if request.locations:
+        return request.locations[0]
+    return None
+
+
+def build_interactive_search_request(input_func: Any = input) -> JobSearchRequest:
+    keywords = ask_list(input_func, "Mots-cles / postes (separes par des virgules)")
+    locations = ask_list(input_func, "Ville(s) (separees par des virgules)")
+    contract_type = ask_optional(input_func, "Type de contrat (CDI, CDD, alternance...)")
+    remote_mode = ask_remote_mode(input_func)
+    radius_km = ask_int(input_func, "Rayon en km", default=10, minimum=0, maximum=100)
+    max_results = ask_int(input_func, "Nombre max d'offres", default=20, minimum=1, maximum=100)
+    excluded_keywords = ask_list(input_func, "Mots a exclure (optionnel)", required=False)
+
+    return JobSearchRequest(
+        keywords=keywords,
+        locations=locations,
+        location=locations[0] if locations else None,
+        radius_km=radius_km,
+        contract_type=contract_type,
+        remote_mode=remote_mode,
+        max_results=max_results,
+        excluded_keywords=excluded_keywords,
+    )
+
+
+def ask_list(input_func: Any, prompt: str, required: bool = True) -> list[str]:
+    while True:
+        raw_value = input_func(f"{prompt}: ").strip()
+        values = [item.strip() for item in raw_value.split(",") if item.strip()]
+        if values or not required:
+            return values
+        print("Veuillez renseigner au moins une valeur.")
+
+
+def ask_optional(input_func: Any, prompt: str) -> str | None:
+    value = input_func(f"{prompt}: ").strip()
+    return value or None
+
+
+def ask_int(
+    input_func: Any,
+    prompt: str,
+    default: int,
+    minimum: int,
+    maximum: int,
+) -> int:
+    while True:
+        raw_value = input_func(f"{prompt} [{default}]: ").strip()
+        if not raw_value:
+            return default
+        try:
+            value = int(raw_value)
+        except ValueError:
+            print("Veuillez saisir un nombre entier.")
+            continue
+        if minimum <= value <= maximum:
+            return value
+        print(f"Veuillez saisir une valeur entre {minimum} et {maximum}.")
+
+
+def ask_remote_mode(input_func: Any) -> RemoteMode:
+    allowed = ", ".join(mode.value for mode in RemoteMode)
+    while True:
+        raw_value = input_func(f"Teletravail ({allowed}) [any]: ").strip().lower()
+        if not raw_value:
+            return RemoteMode.ANY
+        try:
+            return RemoteMode(raw_value)
+        except ValueError:
+            print(f"Valeur invalide. Choix possibles: {allowed}.")
 
 
 def resolve_location_code(location: str | None, explicit_code: str | None = None) -> str | None:

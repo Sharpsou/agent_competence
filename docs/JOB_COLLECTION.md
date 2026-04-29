@@ -30,6 +30,18 @@ Fichier utilise :
 
 Ce fichier est versionne pour le moment afin de cadrer les champs attendus. On pourra ensuite passer a un fichier local ignore si les filtres deviennent personnels ou sensibles.
 
+La commande interactive `search-jobs` pose les questions a chaque lancement :
+
+- mots-cles ou postes
+- ville(s)
+- type de contrat
+- preference teletravail
+- rayon
+- nombre maximum d'offres
+- mots a exclure
+
+Elle met ensuite a jour `config/job_search_request.json` avant d'appeler les sources.
+
 ## Sources initiales
 
 ### France Travail
@@ -60,6 +72,7 @@ Approche observee :
 Le futur endpoint devra accepter :
 
 - `keywords`: liste de mots-cles ou roles
+- `locations`: liste de villes ou zones
 - `location`: texte utilisateur
 - `location_code`: code source optionnel si connu
 - `radius_km`: rayon optionnel

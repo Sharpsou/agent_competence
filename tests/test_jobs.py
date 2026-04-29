@@ -1,3 +1,6 @@
+from pathlib import Path
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from app.jobs import (
@@ -6,9 +9,11 @@ from app.jobs import (
     JobOffer,
     JobSearchRequest,
     RemoteMode,
+    build_interactive_search_request,
     detect_remote_mode,
     load_search_request_config,
     resolve_location_code,
+    save_search_request_config,
     search_jobs,
     search_jobs_from_config,
 )
@@ -94,6 +99,7 @@ def test_loads_search_request_from_json_config() -> None:
     request = load_search_request_config(DEFAULT_SEARCH_CONFIG_PATH)
 
     assert request.keywords
+    assert request.locations == ["Nantes"]
     assert request.location == "Nantes"
     assert request.contract_type == "CDI"
 
@@ -122,3 +128,35 @@ def test_jobs_search_endpoint_accepts_request_payload() -> None:
     payload = response.json()
     assert payload["resolved_location_code"] == "44109"
     assert payload["offers"] == []
+
+
+def test_builds_interactive_search_request_from_prompts() -> None:
+    answers = iter(
+        ["Data Analyst, Python", "Nantes, Saint-Nazaire", "CDI", "hybrid", "15", "30", "SAP"]
+    )
+
+    request = build_interactive_search_request(input_func=lambda _: next(answers))
+
+    assert request.keywords == ["Data Analyst", "Python"]
+    assert request.locations == ["Nantes", "Saint-Nazaire"]
+    assert request.location == "Nantes"
+    assert request.contract_type == "CDI"
+    assert request.remote_mode == RemoteMode.HYBRID
+    assert request.radius_km == 15
+    assert request.max_results == 30
+    assert request.excluded_keywords == ["SAP"]
+
+
+def test_saves_search_request_config() -> None:
+    path = Path("data") / "runtime" / f"job-search-request-{uuid4()}.json"
+    request = JobSearchRequest(keywords=["Data"], locations=["Nantes"], contract_type="CDI")
+
+    try:
+        save_search_request_config(request, path)
+        loaded = load_search_request_config(path)
+
+        assert loaded.keywords == ["Data"]
+        assert loaded.locations == ["Nantes"]
+        assert loaded.contract_type == "CDI"
+    finally:
+        path.unlink(missing_ok=True)

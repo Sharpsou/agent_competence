@@ -35,6 +35,18 @@ Ou lance une recherche interactive depuis le terminal :
 search-jobs
 ```
 
+Si Windows indique que `search-jobs` n'est pas reconnu, lance plutot :
+
+```powershell
+python -m app.cli
+```
+
+ou :
+
+```powershell
+.\scripts\search-jobs.cmd
+```
+
 La commande demande les mots-cles, ville(s), type de contrat, preference teletravail et nombre de resultats, puis met a jour `config/job_search_request.json`.
 
 Endpoints utiles :

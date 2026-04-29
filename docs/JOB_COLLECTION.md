@@ -30,7 +30,21 @@ Fichier utilise :
 
 Ce fichier est versionne pour le moment afin de cadrer les champs attendus. On pourra ensuite passer a un fichier local ignore si les filtres deviennent personnels ou sensibles.
 
-La commande interactive `search-jobs` pose les questions a chaque lancement :
+La commande interactive `search-jobs` pose les questions a chaque lancement.
+
+Sur Windows, si le script installe par pip n'est pas dans le `PATH`, utiliser :
+
+```powershell
+python -m app.cli
+```
+
+ou :
+
+```powershell
+.\scripts\search-jobs.cmd
+```
+
+Questions posees :
 
 - mots-cles ou postes
 - ville(s)

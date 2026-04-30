@@ -1,14 +1,15 @@
 {
   "keywords": [
     "data",
+    "scien",
     "analys",
-    "scienc",
     "sql"
   ],
   "locations": [
-    "france"
+    "nantes",
+    "saint-nazaire"
   ],
-  "location": "france",
+  "location": "nantes",
   "location_code": null,
   "radius_km": 10,
   "contract_type": "CDI",
@@ -16,7 +17,7 @@
   "sources": [
     "france_travail"
   ],
-  "max_results": 20,
+  "max_results": 30,
   "excluded_keywords": [],
   "include_raw_payload": false
 }

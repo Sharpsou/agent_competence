@@ -3,6 +3,9 @@ from fastapi.testclient import TestClient
 from app.competencies import (
     CompetencyExtractionRequest,
     JsonLlmClient,
+    LocalOpenAiCompatibleClient,
+    build_default_llm_client,
+    chunk_offers_for_llm,
     extract_competencies_from_offers,
 )
 from app.jobs import JobOffer, RemoteMode
@@ -141,6 +144,32 @@ def test_extraction_falls_back_when_local_llm_is_stopped() -> None:
 
     assert response.agent_trace[0].agent_name == "candidate_extractor"
     assert [competency.name for competency in response.competencies] == ["Python", "SQL"]
+
+
+def test_llm_offer_batch_size_ignores_invalid_env_value(monkeypatch) -> None:
+    monkeypatch.setenv("LOCAL_LLM_OFFERS_PER_CALL", "invalid")
+
+    batches = chunk_offers_for_llm(
+        [
+            job_offer("1", "Data Analyst", "Acme", "SQL."),
+            job_offer("2", "Data Scientist", "Beta", "Python."),
+        ]
+    )
+
+    assert [[offer.source_job_id for offer in batch] for batch in batches] == [["1"], ["2"]]
+
+
+def test_default_llm_client_ignores_invalid_numeric_env(monkeypatch) -> None:
+    monkeypatch.setenv("LOCAL_LLM_BASE_URL", "http://localhost:1234")
+    monkeypatch.setenv("LOCAL_LLM_MODEL", "local-model")
+    monkeypatch.setenv("LOCAL_LLM_TIMEOUT_SECONDS", "invalid")
+    monkeypatch.setenv("LOCAL_LLM_MAX_TOKENS", "invalid")
+
+    client = build_default_llm_client()
+
+    assert isinstance(client, LocalOpenAiCompatibleClient)
+    assert client.timeout_seconds == 45
+    assert client.max_tokens == 1200
 
 
 def job_offer(source_job_id: str, title: str, company: str, description: str) -> JobOffer:

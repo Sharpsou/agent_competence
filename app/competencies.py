@@ -14,7 +14,7 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from app.jobs import JobOffer, normalize_text
-from app.settings import load_environment
+from app.settings import env_int, load_environment
 
 
 class CompetencyCategory(StrEnum):
@@ -118,21 +118,23 @@ class LlmCandidateExtractionAgent:
         self.llm_client = llm_client
 
     def extract(self, request: CompetencyExtractionRequest) -> list[CompetencyEvidence]:
-        payload = self.llm_client.complete_json(
-            system_prompt=LLM_EXTRACTION_SYSTEM_PROMPT,
-            user_prompt=build_llm_extraction_prompt(request),
-        )
-        candidates = payload.get("competencies")
-        if not isinstance(candidates, list):
-            return []
-
         evidence: list[CompetencyEvidence] = []
-        for candidate in candidates:
-            if not isinstance(candidate, dict):
+        for offers in chunk_offers_for_llm(request.offers):
+            batch_request = request.model_copy(update={"offers": offers})
+            payload = self.llm_client.complete_json(
+                system_prompt=LLM_EXTRACTION_SYSTEM_PROMPT,
+                user_prompt=build_llm_extraction_prompt(batch_request),
+            )
+            candidates = payload.get("competencies")
+            if not isinstance(candidates, list):
                 continue
-            parsed = parse_llm_candidate(candidate)
-            if parsed:
-                evidence.append(parsed)
+
+            for candidate in candidates:
+                if not isinstance(candidate, dict):
+                    continue
+                parsed = parse_llm_candidate(candidate)
+                if parsed:
+                    evidence.append(parsed)
         return evidence
 
 
@@ -302,10 +304,12 @@ class LocalOpenAiCompatibleClient:
         base_url: str,
         model: str,
         timeout_seconds: int = 45,
+        max_tokens: int = 1200,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout_seconds = timeout_seconds
+        self.max_tokens = max_tokens
 
     def complete_json(self, system_prompt: str, user_prompt: str) -> dict[str, object]:
         payload = {
@@ -315,6 +319,7 @@ class LocalOpenAiCompatibleClient:
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.1,
+            "max_tokens": self.max_tokens,
             "response_format": {"type": "json_object"},
         }
         request = urllib.request.Request(
@@ -334,8 +339,14 @@ def build_default_llm_client() -> JsonLlmClient | None:
     model = os.getenv("LOCAL_LLM_MODEL")
     if not base_url or not model:
         return None
-    timeout = int(os.getenv("LOCAL_LLM_TIMEOUT_SECONDS", "45"))
-    return LocalOpenAiCompatibleClient(base_url=base_url, model=model, timeout_seconds=timeout)
+    timeout = env_int("LOCAL_LLM_TIMEOUT_SECONDS", default=45, minimum=1)
+    max_tokens = env_int("LOCAL_LLM_MAX_TOKENS", default=1200, minimum=1)
+    return LocalOpenAiCompatibleClient(
+        base_url=base_url,
+        model=model,
+        timeout_seconds=timeout,
+        max_tokens=max_tokens,
+    )
 
 
 def parse_openai_compatible_json_response(payload: dict[str, Any]) -> dict[str, object]:
@@ -349,6 +360,12 @@ def parse_openai_compatible_json_response(payload: dict[str, Any]) -> dict[str, 
     if not isinstance(parsed, dict):
         raise ValueError("LLM JSON response must be an object.")
     return parsed
+
+
+def chunk_offers_for_llm(offers: list[JobOffer]) -> list[list[JobOffer]]:
+    load_environment()
+    batch_size = env_int("LOCAL_LLM_OFFERS_PER_CALL", default=1, minimum=1)
+    return [offers[index : index + batch_size] for index in range(0, len(offers), batch_size)]
 
 
 def parse_llm_candidate(candidate: dict[str, object]) -> CompetencyEvidence | None:
@@ -377,12 +394,17 @@ def parse_llm_candidate(candidate: dict[str, object]) -> CompetencyEvidence | No
 
 
 LLM_EXTRACTION_SYSTEM_PROMPT = """
-Tu extrais les competences explicites d'offres d'emploi.
+Tu extrais les competences explicites et concretes d'offres d'emploi.
 Reponds uniquement en JSON avec la cle "competencies".
-Chaque competence doit avoir: name, category, confidence, source_job_id, title,
-company_name, matched_text.
+Chaque competence doit avoir exactement: name, category, confidence, source_job_id,
+title, company_name, matched_text.
 Categories autorisees: technical, method, tool, domain, language.
 N'invente pas de competence absente du texte.
+Ne retourne pas de termes generiques comme data, donnees, projet, equipe,
+client, informatique, analyse, developpement.
+Exemples de bonnes competences: SQL, Python, Power BI, dbt, Tableau,
+Spark, Kafka, ETL, data visualisation, gouvernance des donnees, cloud.
+Si aucune competence concrete n'est presente, retourne {"competencies":[]}.
 """.strip()
 
 
@@ -392,7 +414,7 @@ def build_llm_extraction_prompt(request: CompetencyExtractionRequest) -> str:
             "source_job_id": offer.source_job_id,
             "title": offer.title,
             "company_name": offer.company_name,
-            "description_text": offer.description_text[:3000],
+            "description_text": offer.description_text[:1200],
         }
         for offer in request.offers
     ]

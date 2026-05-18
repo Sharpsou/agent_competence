@@ -1,44 +1,33 @@
-# Notes projet
+# Projet
 
 ## Objectif
 
-Construire un backend FastAPI clair, minimal, testable et pret a etre connecte a un futur front web.
-
-Premier usage vise : interroger des sources d'offres d'emploi selon des filtres fournis avant l'appel, puis retourner des offres normalisees.
+Construire un backend simple pour observer les competences demandees dans les
+offres d'emploi : collecter des annonces, normaliser les donnees, extraire les
+competences, puis conserver les resultats quand PostgreSQL est disponible.
 
 ## Principes
 
-- Commencer simple : `app/main.py` suffit tant que le besoin reste petit.
-- Ajouter des dossiers seulement quand le code le justifie.
-- Garder les conventions projet dans `.agents/skills/`, installees depuis `skills.sh`.
-- Tests rapides pour chaque comportement public.
-- Reprendre les apprentissages du projet local `D:\prog\actu_emploi` sans importer toute sa complexite.
+- Garder une API mince et des fonctions testables directement.
+- Versionner les conventions de travail utiles, notamment `.agents/skills/`.
+- Preferer des boucles courtes : petit changement, verification, ajustement.
+- Documenter les decisions durables dans `docs/`, pas les brouillons locaux.
+- Ajouter des connecteurs ou couches d'abstraction seulement quand le besoin est
+  concret.
 
-## Jalon courant
+## Etat actuel
 
-Creer un backend d'interrogation d'offres d'emploi.
+- API FastAPI avec endpoints de sante, recherche et analyse.
+- Connecteur France Travail base sur les pages publiques.
+- CLI de recherche, d'analyse et de requete SQL.
+- Extraction de competences par LLM local optionnel, avec fallback deterministe.
+- Schema PostgreSQL initial et `docker-compose.yml` pour la base locale.
+- CI GitHub pour format, lint, typage et tests.
 
-Entrees attendues avant l'appel :
+## Decisions ouvertes
 
-- mots-cles ou intitules cibles
-- localisation
-- rayon de recherche si la source le permet
-- source cible ou liste de sources
-- nombre maximal d'offres
-- filtres utiles : teletravail, type de contrat, date de publication, mots exclus
-
-Sortie attendue :
-
-- liste d'offres normalisees
-- source et identifiant source
-- titre, entreprise, localisation, contrat, mode de travail
-- URL de detail quand disponible
-- payload brut optionnel pour audit ou debug
-
-## Prochaines etapes proposees
-
-- Definir le contrat de requete `POST /jobs/search`.
-- Creer un modele commun d'offre normalisee.
-- Ajouter un premier connecteur inspire de `actu_emploi` : France Travail en priorite.
-- Ajouter un cache local et une limite de requetes pour eviter les appels inutiles.
-- Ajouter un connecteur Jooble ou web public ensuite, seulement si le premier flux est stable.
+- Garder `config/job_search_request.json` comme exemple versionne ou le remplacer
+  par un fichier `.example` si les criteres deviennent personnels.
+- Remplacer la petite table de villes statique par une source plus complete.
+- Ajouter un second connecteur apres stabilisation du flux France Travail.
+- Ajouter un test d'integration PostgreSQL conditionne par `DATABASE_URL`.

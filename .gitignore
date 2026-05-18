@@ -2,11 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.python-version
 .pytest_cache/
 .pytest_tmp/
 .ruff_cache/
 .mypy_cache/
 .coverage
+coverage.xml
 htmlcov/
 
 # Virtual environments
@@ -20,12 +22,18 @@ venv/
 
 # Local runtime data
 data/runtime/
+*.sqlite
+*.sqlite3
 
 # Editors / OS
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+logs/
 
 # Build artifacts
 build/
